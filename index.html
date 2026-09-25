@@ -9,6 +9,7 @@
     body {
       margin: 0;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
@@ -23,34 +24,61 @@
       line-height: 1.5;
       padding: 0 20px;
     }
+    #extra-text {
+      font-size: 40px;
+      font-weight: bold;
+      color: #c0392b;
+      text-align: center;
+      margin-top: 20px;
+      line-height: 1.4;
+      padding: 0 20px;
+    }
+    #extra-text:empty {
+      display: none;
+    }
   </style>
 </head>
 <body>
   <div id="lunar-text">加载中…</div>
+  <div id="extra-text"></div>
 
   <script src="lunar.js"></script>
   <script>
     function updateLunar() {
+      if (typeof Solar === 'undefined') return;
+
       const today = new Date();
-      const solar = Solar.fromYmd(
-        today.getFullYear(),
-        today.getMonth() + 1,
-        today.getDate()
-      );
+      const solar = Solar.fromYmd(today.getFullYear(), today.getMonth() + 1, today.getDate());
       const lunar = solar.getLunar();
 
-      // 输出格式：乙巳年六月廿五
-      const year = lunar.getYearInGanZhi() + '年';
+      // 第一行：农历日期
+      // const year = lunar.getYearInGanZhi() + '年';
       const month = lunar.getMonthInChinese() + '月';
       const day = lunar.getDayInChinese();
+      document.getElementById('lunar-text').textContent = month + day;
 
-      document.getElementById('lunar-text').textContent = year + month + day;
+      // 第二行：节气 + 农历节日（合并显示）
+      const extras = [];
+
+      const jieqi = lunar.getJieQi();          // 二十四节气
+      if (jieqi) extras.push(jieqi);
+
+      const festivals = lunar.getFestivals();  // 农历节日，返回数组
+      festivals.forEach(f => extras.push(f));
+
+      document.getElementById('extra-text').textContent = extras.join(' ');
     }
 
     updateLunar();
-
-    // 每天零点自动刷新（如果页面一直开着）
     setInterval(updateLunar, 60 * 60 * 1000);
+  </script>
+
+  <script>
+    window.onload = function() {
+      if (typeof Solar === 'undefined') {
+        document.getElementById('lunar-text').textContent = '加载失败，请检查网络';
+      }
+    };
   </script>
 </body>
 </html>
