@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>今日农历</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #fff;
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    #lunar-text {
+      font-size: 56px;
+      font-weight: bold;
+      color: #1a1a1a;
+      text-align: center;
+      line-height: 1.5;
+      padding: 0 20px;
+    }
+  </style>
+</head>
+<body>
+  <div id="lunar-text">加载中…</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@2.0.4/dist/lunar.min.js"></script>
+  <script>
+    function updateLunar() {
+      const today = new Date();
+      const solar = Solar.fromYmd(
+        today.getFullYear(),
+        today.getMonth() + 1,
+        today.getDate()
+      );
+      const lunar = solar.getLunar();
+
+      // 输出格式：乙巳年六月廿五
+      const year = lunar.getYearInGanZhi() + '年';
+      const month = lunar.getMonthInChinese() + '月';
+      const day = lunar.getDayInChinese();
+
+      document.getElementById('lunar-text').textContent = year + month + day;
+    }
+
+    updateLunar();
+
+    // 每天零点自动刷新（如果页面一直开着）
+    setInterval(updateLunar, 60 * 60 * 1000);
+  </script>
+</body>
+</html>
