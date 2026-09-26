@@ -36,41 +36,134 @@
     #extra-text:empty {
       display: none;
     }
+
+    /* 天气区域 */
+    #weather-box {
+      margin-top: 40px;
+      padding-top: 30px;
+      border-top: 1px solid #eee;
+      width: 80%;
+      text-align: center;
+      line-height: 1.4;
+    }
+    #weather-location {
+      font-size: 32px;
+      color: #555;
+    }
+    #weather-temp {
+      font-size: 72px;
+      font-weight: bold;
+      color: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    #weather-temp .weather-icon {
+      font-size: 72px;
+      line-height: 1;
+    }
+    #weather-desc {
+      font-size: 36px;
+      color: #333;
+    }
   </style>
 </head>
 <body>
   <div id="lunar-text">加载中…</div>
   <div id="extra-text"></div>
 
+  <div id="weather-box" style="display:none;">
+	<div id="weather-location"></div>
+    <div id="weather-temp"></div>
+    <div id="weather-desc"></div>
+  </div>
+
   <script src="lunar.js"></script>
   <script>
+    // ===== 配置区 =====
+    const CONFIG = {
+      latitude: 34.75,
+      longitude: 113.62,
+      cityName: '郑州',
+      refreshMinutes: 30
+    };
+    // ==================
+
+    // ---------- 农历与节气 ----------
     function updateLunar() {
       if (typeof Solar === 'undefined') return;
-
       const today = new Date();
       const solar = Solar.fromYmd(today.getFullYear(), today.getMonth() + 1, today.getDate());
       const lunar = solar.getLunar();
 
-      // 第一行：农历日期
-      // const year = lunar.getYearInGanZhi() + '年';
       const month = lunar.getMonthInChinese() + '月';
       const day = lunar.getDayInChinese();
       document.getElementById('lunar-text').textContent = month + day;
 
-      // 第二行：节气 + 农历节日（合并显示）
       const extras = [];
-
-      const jieqi = lunar.getJieQi();          // 二十四节气
+      const jieqi = lunar.getJieQi();
       if (jieqi) extras.push(jieqi);
-
-      const festivals = lunar.getFestivals();  // 农历节日，返回数组
-      festivals.forEach(f => extras.push(f));
-
+      lunar.getFestivals().forEach(f => extras.push(f));
       document.getElementById('extra-text').textContent = extras.join(' ');
     }
-
     updateLunar();
     setInterval(updateLunar, 60 * 60 * 1000);
+
+    // ---------- 天气 ----------
+    // 每个天气代码 → { icon: 表情图标, text: 中文描述 }
+    const WEATHER_CODE_MAP = {
+      0:  { icon: '☀️', text: '晴' },
+      1:  { icon: '🌤️', text: '大部晴朗' },
+      2:  { icon: '⛅', text: '多云' },
+      3:  { icon: '☁️', text: '阴' },
+      45: { icon: '🌫️', text: '雾' },
+      48: { icon: '🌫️', text: '雾凇' },
+      51: { icon: '🌦️', text: '小毛毛雨' },
+      53: { icon: '🌦️', text: '毛毛雨' },
+      55: { icon: '🌧️', text: '大毛毛雨' },
+      61: { icon: '🌧️', text: '小雨' },
+      63: { icon: '🌧️', text: '中雨' },
+      65: { icon: '🌧️', text: '大雨' },
+      66: { icon: '🌧️', text: '冻雨' },
+      67: { icon: '🌧️', text: '强冻雨' },
+      71: { icon: '🌨️', text: '小雪' },
+      73: { icon: '🌨️', text: '中雪' },
+      75: { icon: '❄️', text: '大雪' },
+      77: { icon: '🌨️', text: '雪粒' },
+      80: { icon: '🌦️', text: '小阵雨' },
+      81: { icon: '🌧️', text: '中阵雨' },
+      82: { icon: '🌧️', text: '大阵雨' },
+      85: { icon: '🌨️', text: '小阵雪' },
+      86: { icon: '🌨️', text: '大阵雪' },
+      95: { icon: '⛈️', text: '雷阵雨' },
+      96: { icon: '⛈️', text: '雷阵雨伴冰雹' },
+      99: { icon: '⛈️', text: '强雷暴伴冰雹' }
+    };
+
+    async function getWeather() {
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.latitude}&longitude=${CONFIG.longitude}&current=temperature_2m,weather_code&timezone=auto`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const current = data.current;
+
+        const temp = Math.round(current.temperature_2m);
+        const code = current.weather_code;
+        const info = WEATHER_CODE_MAP[code] || { icon: '❓', text: '未知' };
+
+        document.getElementById('weather-location').textContent = CONFIG.cityName;
+        document.getElementById('weather-temp').innerHTML =
+          `<span class="weather-icon">${info.icon}</span>${temp}°`;
+        document.getElementById('weather-desc').textContent = info.text;
+        document.getElementById('weather-box').style.display = 'block';
+      } catch (err) {
+        document.getElementById('weather-box').style.display = 'none';
+      }
+    }
+
+    getWeather();
+    setInterval(getWeather, CONFIG.refreshMinutes * 60 * 1000);
   </script>
 
   <script>
